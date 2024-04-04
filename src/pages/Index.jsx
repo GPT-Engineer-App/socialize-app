@@ -13,43 +13,103 @@ const Index = () => {
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const toast = useToast();
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setUsername("testuser");
-    toast({ title: "ログインしました", status: "success" });
+  const handleLogin = async () => {
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: "testuser" }),
+      });
+
+      if (response.ok) {
+        setIsLoggedIn(true);
+        setUsername("testuser");
+        toast({ title: "ログインしました", status: "success" });
+      } else {
+        toast({ title: "ログインに失敗しました", status: "error" });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({ title: "ログインに失敗しました", status: "error" });
+    }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUsername("");
-    toast({ title: "ログアウトしました", status: "success" });
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        setIsLoggedIn(false);
+        setUsername("");
+        toast({ title: "ログアウトしました", status: "success" });
+      } else {
+        toast({ title: "ログアウトに失敗しました", status: "error" });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({ title: "ログアウトに失敗しました", status: "error" });
+    }
   };
 
-  const handleCreateCommunity = () => {
-    const newCommunity = {
-      id: communities.length + 1,
-      name: "新しいコミュニティ",
-      members: 1,
-      posts: [],
-    };
-    setCommunities([...communities, newCommunity]);
-    toast({ title: "コミュニティを作成しました", status: "success" });
+  const handleCreateCommunity = async () => {
+    try {
+      const response = await fetch("/api/communities", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: "新しいコミュニティ" }),
+      });
+
+      if (response.ok) {
+        const newCommunity = await response.json();
+        setCommunities([...communities, newCommunity]);
+        toast({ title: "コミュニティを作成しました", status: "success" });
+      } else {
+        toast({ title: "コミュニティの作成に失敗しました", status: "error" });
+      }
+    } catch (error) {
+      console.error("Create community error:", error);
+      toast({ title: "コミュニティの作成に失敗しました", status: "error" });
+    }
   };
 
   const handleSelectCommunity = (community) => {
     setSelectedCommunity(community);
   };
 
-  const handlePost = (text) => {
+  const handlePost = async (text) => {
     if (selectedCommunity) {
-      const updatedCommunity = {
-        ...selectedCommunity,
-        posts: [...selectedCommunity.posts, { id: selectedCommunity.posts.length + 1, text, likes: 0, bads: 0 }],
-      };
-      const updatedCommunities = communities.map((c) => (c.id === selectedCommunity.id ? updatedCommunity : c));
-      setCommunities(updatedCommunities);
-      setSelectedCommunity(updatedCommunity);
-      toast({ title: "投稿しました", status: "success" });
+      try {
+        const response = await fetch(`/api/communities/${selectedCommunity.id}/posts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text }),
+        });
+
+        if (response.ok) {
+          const newPost = await response.json();
+          const updatedCommunity = {
+            ...selectedCommunity,
+            posts: [...selectedCommunity.posts, newPost],
+          };
+          const updatedCommunities = communities.map((c) => (c.id === selectedCommunity.id ? updatedCommunity : c));
+          setCommunities(updatedCommunities);
+          setSelectedCommunity(updatedCommunity);
+          toast({ title: "投稿しました", status: "success" });
+        } else {
+          toast({ title: "投稿に失敗しました", status: "error" });
+        }
+      } catch (error) {
+        console.error("Post error:", error);
+        toast({ title: "投稿に失敗しました", status: "error" });
+      }
     }
   };
 
